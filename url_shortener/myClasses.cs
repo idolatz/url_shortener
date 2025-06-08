@@ -31,7 +31,7 @@ class dbHandler
         command.ExecuteNonQuery();
     }
     
-    public bool CodeExists(string code)
+    public bool CheckCodeExists(string code)
     {
         // Check if the code already exists in the database
         var command = sqlconnection.CreateCommand();
@@ -39,6 +39,18 @@ class dbHandler
         command.Parameters.AddWithValue("$code", code);
         long count = (long)command.ExecuteScalar();
         return count > 0;
+    }
+
+    public bool CheckOriginalUrlExists(string UrlToCheck)
+    {
+        // Check if the original URL exists
+        var command = sqlconnection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM Urls WHERE OriginalUrl = $originalUrl";
+        command.Parameters.AddWithValue("$originalUrl", UrlToCheck);
+        long count = (long)command.ExecuteScalar();
+        return count > 0;
+
+
     }
 }
 
@@ -59,9 +71,34 @@ class UrlMgmt
         db.InsertUrl(originalUrl, code);
         return code;
     }
+
+
+
     private string GenerateShortCode(string url)
     {
-        String randomString = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(url)).Substring(0, 8);
-        return " ";
+        string randomString = getRandomString();
+        bool isExists = this.db.CheckCodeExists(randomString);
+
+        // Ensure the generated code is unique
+        while (isExists)
+        {
+            randomString = getRandomString();
+            isExists = this.db.CheckCodeExists(randomString);
+        }
+
+        return randomString;
+    }
+
+    private string getRandomString()
+    {
+        int length = 6; // Length of the random string
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        Random random = new Random();
+        char[] stringChars = new char[length];
+        for (int i = 0; i < length; i++)
+        {
+            stringChars[i] = chars[random.Next(chars.Length)];
+        }
+        return new string(stringChars);
     }
 }
