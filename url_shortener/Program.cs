@@ -1,31 +1,22 @@
 ﻿using System;
 using Microsoft.Data.Sqlite;
+using System.Security.Cryptography;
 
-class Program
+namespace url_shortener
 {
-    static void Main(string[] args)
+    class Program
     {
-        // Initialize the database connection
-        using (var sqlconnection = new SqliteConnection("Data Source=url_shortener.db"))
+        static void Main(string[] args)
         {
-            sqlconnection.Open();
-            // Create the table if it doesn't exist
-            var command = sqlconnection.CreateCommand();
-            command.CommandText = @"
-                CREATE TABLE IF NOT EXISTS Urls (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    OriginalUrl TEXT NOT NULL,
-                    ShortenedUrl TEXT NOT NULL UNIQUE
-                );
-            ";
-            command.ExecuteNonQuery();
+            for (int i = 0; i < 10; i++)
+            {
+                //String randomString = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("")).Substring(0, 8);
+                Console.WriteLine("Hello World!");
+            }
+            
+
+
         }
 
-        Console.WriteLine("Please enter a URL to shorten:");
-        String url = Console.ReadLine();
-        string shortUrl = ShortenUrl(url);
-        Console.WriteLine($"Shortened URL: {shortUrl}");
-
     }
-    
 }

@@ -14,7 +14,7 @@ class dbHandler
             CREATE TABLE IF NOT EXISTS Urls (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 OriginalUrl TEXT NOT NULL,
-                ShortenedUrl TEXT NOT NULL UNIQUE
+                Code TEXT NOT NULL UNIQUE
             );
         ";
         command.ExecuteNonQuery();
@@ -25,9 +25,43 @@ class dbHandler
         // string code : the shortened URL code like "https://myserver.com/CODE"
         // string originalUrl : the original URL to be shortened like "https://example.com/some/long/url"
         var command = sqlconnection.CreateCommand();
-        command.CommandText = "INSERT INTO Urls (OriginalUrl, ShortenedUrl) VALUES ($originalUrl, $code)";
+        command.CommandText = "INSERT INTO Urls (Code, ShortenedUrl) VALUES ($originalUrl, $code)";
         command.Parameters.AddWithValue("$originalUrl", originalUrl);
         command.Parameters.AddWithValue("$shortenedUrl", code);
         command.ExecuteNonQuery();
+    }
+    
+    public bool CodeExists(string code)
+    {
+        // Check if the code already exists in the database
+        var command = sqlconnection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM Urls WHERE Code = $code";
+        command.Parameters.AddWithValue("$code", code);
+        long count = (long)command.ExecuteScalar();
+        return count > 0;
+    }
+}
+
+class UrlMgmt
+{
+    public string serverUrl;
+    private dbHandler db;
+    public UrlMgmt(string serverUrl)  
+    {
+        this.db = new dbHandler();
+        this.serverUrl = serverUrl;
+    }
+    public string ShortenUrl(string originalUrl)
+    {
+        // Generate a unique code for the shortened URL
+        string code = GenerateShortCode(originalUrl);
+        // Insert the original URL and the shortened URL into the database
+        db.InsertUrl(originalUrl, code);
+        return code;
+    }
+    private string GenerateShortCode(string url)
+    {
+        String randomString = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(url)).Substring(0, 8);
+        return " ";
     }
 }
