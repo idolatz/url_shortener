@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using Microsoft.Data.Sqlite;
 
 public class DbHandler
@@ -82,6 +83,18 @@ public class DbHandler
         }
     }
 
+    public void ListAll()
+    {
+        var command = sqlconnection.CreateCommand();
+        command.CommandText = "SELECT * FROM Urls";
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read()) {
+                Console.WriteLine(reader.GetString(2)+"\t\t"+reader.GetString(1));
+            }
+        }
+    }
+
     public string GetUrlFromCode(string code)
     {
         var command = sqlconnection.CreateCommand();
@@ -93,6 +106,14 @@ public class DbHandler
             string url = reader.GetString(reader.GetOrdinal("OriginalUrl"));
             return url;
         }
+    }
+
+    public void DeleteURL(string url)
+    {
+        var command = sqlconnection.CreateCommand();
+        command.CommandText = "DELETE FROM Urls Where OriginalUrl=$url";
+        command.Parameters.AddWithValue("$url", url);
+        command.ExecuteNonQuery();
     }
 
 }
@@ -116,12 +137,29 @@ public class UrlMgmt
         return shortenUrl;
     }
 
-    public string GetUrlFromCode(string code)
+    public void ListAll()
+    {
+        this.db.ListAll();
+    }
+
+    public void DeleteURL(string url)
+    {
+        if(!this.db.CheckOriginalUrlExists(url))
+        {
+            Console.WriteLine("URL is not exists");
+            return;
+        }
+        this.db.DeleteURL(url);
+        Console.WriteLine("DONE!");
+    }
+
+    public void GetUrlFromCode(string code)
     {
         if (!this.db.CheckCodeExists(code)) {
-            return "404";
+            Console.WriteLine("Code is not exists");
+            return;
         }
-        return this.db.GetUrlFromCode(code);
+        Console.WriteLine(this.db.GetUrlFromCode(code));
     }
 
 
