@@ -72,18 +72,26 @@ public class DbHandler
     public string GetCodeFromUrl(string Url)
     {
         var command = sqlconnection.CreateCommand();
-        command.CommandText = """SELECT Code FROM Urls WHERE OriginalUrl = "$url" """;
+        command.CommandText = "SELECT * FROM Urls WHERE `OriginalUrl`=$url ";
         command.Parameters.AddWithValue("$url", Url);
         using (var reader = command.ExecuteReader())
         {
-            if (reader.Read())
-            {
-                return reader.GetString(reader.GetOrdinal("Code"));
-            }
-            else
-            {
-                return "Exists"; // Or throw an exception, or handle as needed
-            }
+            reader.Read();
+            string code = reader.GetString(reader.GetOrdinal("Code"));
+            return code;
+        }
+    }
+
+    public string GetUrlFromCode(string code)
+    {
+        var command = sqlconnection.CreateCommand();
+        command.CommandText = "SELECT * FROM Urls WHERE `Code`=$code ";
+        command.Parameters.AddWithValue("$code", code);
+        using (var reader = command.ExecuteReader())
+        {
+            reader.Read();
+            string url = reader.GetString(reader.GetOrdinal("OriginalUrl"));
+            return url;
         }
     }
 
@@ -99,13 +107,21 @@ public class UrlMgmt
         this.db = new DbHandler();
         this.serverUrl = serverUrl;
     }
-    public string CreateShortenUrl(string originalUrl)
+    public string GetShortenUrl(string originalUrl)
     {
         // Generate a unique code for the shortened URL
         string code = GenerateShortCode(originalUrl);
         //build the shorten url
         string shortenUrl = "http://" + this.serverUrl + "/" + code;
         return shortenUrl;
+    }
+
+    public string GetUrlFromCode(string code)
+    {
+        if (!this.db.CheckCodeExists(code)) {
+            return "404";
+        }
+        return this.db.GetUrlFromCode(code);
     }
 
 
@@ -116,10 +132,9 @@ public class UrlMgmt
         string code = getRandomString();
         bool isCodeExists = this.db.CheckCodeExists(code);
         bool isUrlExists = this.db.CheckOriginalUrlExists(url);
-        Console.WriteLine("isUrlExists=" + isUrlExists);
         if (isUrlExists)
         {
-             return db.GetCodeFromUrl(code);
+             return db.GetCodeFromUrl(url);
         }
 
         // Ensure the generated code is unique
@@ -146,4 +161,6 @@ public class UrlMgmt
         }
         return new string(stringChars);
     }
+
+
 }
