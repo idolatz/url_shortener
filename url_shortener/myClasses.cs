@@ -1,10 +1,10 @@
 ﻿using System;
 using Microsoft.Data.Sqlite;
 
-class dbHandler
+public class DbHandler
 {
     private SqliteConnection sqlconnection;
-    public dbHandler()
+    public DbHandler()
     {
         // Initialize the SQLite database connection and create the table if it doesn't exist
         this.sqlconnection = new SqliteConnection("Data Source=url_shortener.db");
@@ -25,7 +25,7 @@ class dbHandler
         // string code : the shortened URL code like "https://myserver.com/CODE"
         // string originalUrl : the original URL to be shortened like "https://example.com/some/long/url"
         var command = sqlconnection.CreateCommand();
-        command.CommandText = "INSERT INTO Urls (Code, ShortenedUrl) VALUES ($originalUrl, $code)";
+        command.CommandText = "INSERT INTO Urls (OriginalUrl, Code) VALUES ($originalUrl, $code)";
         command.Parameters.AddWithValue("$originalUrl", originalUrl);
         command.Parameters.AddWithValue("$code", code);
         command.ExecuteNonQuery();
@@ -67,29 +67,45 @@ class dbHandler
             Console.WriteLine(ex.Message);
             return false;
         }
-        
-
-
     }
+
+    public string GetCodeFromUrl(string Url)
+    {
+        var command = sqlconnection.CreateCommand();
+        command.CommandText = """SELECT Code FROM Urls WHERE OriginalUrl = "$url" """;
+        command.Parameters.AddWithValue("$url", Url);
+        using (var reader = command.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                return reader.GetString(reader.GetOrdinal("Code"));
+            }
+            else
+            {
+                return "Exists"; // Or throw an exception, or handle as needed
+            }
+        }
+    }
+
 }
 
-class UrlMgmt
+public class UrlMgmt
 {
     public string serverUrl;
-    private dbHandler db;
+    private DbHandler db;
     public UrlMgmt(string serverUrl)  
     {
         // initialize the UrlMgmt Object
-        this.db = new dbHandler();
+        this.db = new DbHandler();
         this.serverUrl = serverUrl;
     }
     public string CreateShortenUrl(string originalUrl)
     {
         // Generate a unique code for the shortened URL
         string code = GenerateShortCode(originalUrl);
-        // Insert the original URL and the shortened URL into the db
-        db.InsertUrl(originalUrl, code);
-        return code;
+        //build the shorten url
+        string shortenUrl = "http://" + this.serverUrl + "/" + code;
+        return shortenUrl;
     }
 
 
@@ -97,17 +113,24 @@ class UrlMgmt
     private string GenerateShortCode(string url)
     {
         // this function return random code after check that it doesnt exists in the db
-        string randomString = getRandomString();
-        bool isExists = this.db.CheckCodeExists(randomString);
-
-        // Ensure the generated code is unique
-        while (isExists)
+        string code = getRandomString();
+        bool isCodeExists = this.db.CheckCodeExists(code);
+        bool isUrlExists = this.db.CheckOriginalUrlExists(url);
+        Console.WriteLine("isUrlExists=" + isUrlExists);
+        if (isUrlExists)
         {
-            randomString = getRandomString();
-            isExists = this.db.CheckCodeExists(randomString);
+             return db.GetCodeFromUrl(code);
         }
 
-        return randomString;
+        // Ensure the generated code is unique
+        while (isCodeExists)
+        {
+            code = getRandomString();
+            isCodeExists = this.db.CheckCodeExists(code);
+        }
+        // Insert the original URL and the shortened URL into the db
+        db.InsertUrl(url, code);
+        return code;
     }
 
     private string getRandomString()

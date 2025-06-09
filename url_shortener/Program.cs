@@ -6,7 +6,10 @@ namespace UrlShortenerApp
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello from Main!");
+            UrlMgmt um = new UrlMgmt("localhost");
+            string shorten = um.CreateShortenUrl("https://this.is.a.test/test/page");
+            Console.WriteLine(shorten);
+
         }
     }
 }
