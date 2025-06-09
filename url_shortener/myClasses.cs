@@ -27,28 +27,47 @@ class dbHandler
         var command = sqlconnection.CreateCommand();
         command.CommandText = "INSERT INTO Urls (Code, ShortenedUrl) VALUES ($originalUrl, $code)";
         command.Parameters.AddWithValue("$originalUrl", originalUrl);
-        command.Parameters.AddWithValue("$shortenedUrl", code);
+        command.Parameters.AddWithValue("$code", code);
         command.ExecuteNonQuery();
     }
     
     public bool CheckCodeExists(string code)
     {
         // Check if the code already exists in the database
+        // part of collision handling
         var command = sqlconnection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM Urls WHERE Code = $code";
         command.Parameters.AddWithValue("$code", code);
-        long count = (long)command.ExecuteScalar();
-        return count > 0;
+        try
+        {
+            long count = (long)command.ExecuteScalar();
+            return count > 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return false;
+        }
     }
 
     public bool CheckOriginalUrlExists(string UrlToCheck)
     {
         // Check if the original URL exists
+        // part of collision handling
         var command = sqlconnection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM Urls WHERE OriginalUrl = $originalUrl";
         command.Parameters.AddWithValue("$originalUrl", UrlToCheck);
-        long count = (long)command.ExecuteScalar();
-        return count > 0;
+        try
+        {
+            long count = (long)command.ExecuteScalar();
+            return count > 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return false;
+        }
+        
 
 
     }
@@ -60,14 +79,15 @@ class UrlMgmt
     private dbHandler db;
     public UrlMgmt(string serverUrl)  
     {
+        // initialize the UrlMgmt Object
         this.db = new dbHandler();
         this.serverUrl = serverUrl;
     }
-    public string ShortenUrl(string originalUrl)
+    public string CreateShortenUrl(string originalUrl)
     {
         // Generate a unique code for the shortened URL
         string code = GenerateShortCode(originalUrl);
-        // Insert the original URL and the shortened URL into the database
+        // Insert the original URL and the shortened URL into the db
         db.InsertUrl(originalUrl, code);
         return code;
     }
@@ -76,6 +96,7 @@ class UrlMgmt
 
     private string GenerateShortCode(string url)
     {
+        // this function return random code after check that it doesnt exists in the db
         string randomString = getRandomString();
         bool isExists = this.db.CheckCodeExists(randomString);
 
@@ -91,6 +112,7 @@ class UrlMgmt
 
     private string getRandomString()
     {
+        // this function create rundom string 
         int length = 6; // Length of the random string
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         Random random = new Random();
