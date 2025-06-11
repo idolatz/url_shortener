@@ -1,9 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
-using Sprache;
-using System;
 using System.Net;
-using System.Runtime.CompilerServices;
-using System.Security.AccessControl;
 using System.Web;
 
 public class DbHandler
