@@ -293,8 +293,9 @@ public class HTTPServer
 
             else if (requestedUrl == "/")
             {
-                string responseString = "<html><body><h1></h1></body></html>";
-                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "index.html");
+                string contents = File.ReadAllText(path);
+                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(contents);
                 response.ContentLength64 = buffer.Length;
                 response.OutputStream.Write(buffer, 0, buffer.Length);
                 response.Close();
