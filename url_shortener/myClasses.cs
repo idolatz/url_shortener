@@ -11,8 +11,8 @@ public class DbHandler
         string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "url_shortener.db");
         Console.WriteLine("db path: "+ dbPath);
 
-        this.sqlconnection = new SqliteConnection("Data Source="+dbPath);
-        this.sqlconnection.Open();
+        this.sqlconnection = new SqliteConnection("Data Source="+dbPath); //create the db object
+        this.sqlconnection.Open(); // open the db
         var command = this.sqlconnection.CreateCommand();
         command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Urls (
@@ -20,18 +20,18 @@ public class DbHandler
                 OriginalUrl TEXT NOT NULL,
                 Code TEXT NOT NULL UNIQUE
             );
-        ";
+        "; 
         command.ExecuteNonQuery();
     }
 
-    public void InsertUrl(string originalUrl, string code)
+    public void InsertUrl(string originalUrl, string code) 
     {
         // string code : the shortened URL code like "https://myserver.com/CODE"
         // string originalUrl : the original URL to be shortened like "https://example.com/some/long/url"
         var command = sqlconnection.CreateCommand();
         command.CommandText = "INSERT INTO Urls (OriginalUrl, Code) VALUES ($originalUrl, $code)";
         command.Parameters.AddWithValue("$originalUrl", originalUrl);
-        command.Parameters.AddWithValue("$code", code);
+        command.Parameters.AddWithValue("$code", code); 
         command.ExecuteNonQuery();
     }
     
@@ -54,7 +54,7 @@ public class DbHandler
         }
     }
 
-    public bool CheckOriginalUrlExists(string UrlToCheck)
+    public bool CheckUrlExists(string UrlToCheck)
     {
         // Check if the original URL exists
         // part of collision handling
@@ -75,6 +75,7 @@ public class DbHandler
 
     public string GetCodeFromUrl(string Url)
     {
+        // get Url and return it code
         var command = sqlconnection.CreateCommand();
         command.CommandText = "SELECT * FROM Urls WHERE `OriginalUrl`=$url ";
         command.Parameters.AddWithValue("$url", Url);
@@ -86,20 +87,10 @@ public class DbHandler
         }
     }
 
-    public void ListAll()
-    {
-        var command = sqlconnection.CreateCommand();
-        command.CommandText = "SELECT * FROM Urls";
-        using (var reader = command.ExecuteReader())
-        {
-            while (reader.Read()) {
-                Console.WriteLine(reader.GetString(2)+"\t\t"+reader.GetString(1));
-            }
-        }
-    }
 
     public string GetUrlFromCode(string code)
     {
+        // get Code and return it Url
         var command = sqlconnection.CreateCommand();
         command.CommandText = "SELECT * FROM Urls WHERE `Code`=$code ";
         command.Parameters.AddWithValue("$code", code);
@@ -109,14 +100,6 @@ public class DbHandler
             string url = reader.GetString(reader.GetOrdinal("OriginalUrl"));
             return url;
         }
-    }
-
-    public void DeleteURL(string url)
-    {
-        var command = sqlconnection.CreateCommand();
-        command.CommandText = "DELETE FROM Urls Where OriginalUrl=$url";
-        command.Parameters.AddWithValue("$url", url);
-        command.ExecuteNonQuery();
     }
 
 }
@@ -137,22 +120,6 @@ public class UrlMgmt
         return code;
     }
 
-    public void ListAll()
-    {
-        this.db.ListAll();
-    }
-
-    public void DeleteURL(string url)
-    {
-        if(!this.db.CheckOriginalUrlExists(url))
-        {
-            Console.WriteLine("URL is not exists");
-            return;
-        }
-        this.db.DeleteURL(url);
-        Console.WriteLine("DONE!");
-    }
-
     public string GetUrlFromCode(string code)
     {
         if (!this.db.CheckCodeExists(code)) {
@@ -169,7 +136,7 @@ public class UrlMgmt
         // this function return random code after check that it doesnt exists in the db
         string code = getRandomString();
         bool isCodeExists = this.db.CheckCodeExists(code);
-        bool isUrlExists = this.db.CheckOriginalUrlExists(url);
+        bool isUrlExists = this.db.CheckUrlExists(url);
         if (isUrlExists)
         {
              return db.GetCodeFromUrl(url);
