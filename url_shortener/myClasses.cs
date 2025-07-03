@@ -8,7 +8,10 @@ public class DbHandler
     public DbHandler()
     {
         // Initialize the SQLite database connection and create the table if it doesn't exist
-        this.sqlconnection = new SqliteConnection("Data Source=url_shortener.db");
+        string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "url_shortener.db");
+        Console.WriteLine("db path: "+ dbPath);
+
+        this.sqlconnection = new SqliteConnection("Data Source="+dbPath);
         this.sqlconnection.Open();
         var command = this.sqlconnection.CreateCommand();
         command.CommandText = @"
@@ -206,13 +209,16 @@ public class HTTPServer
     private HttpListener listener;
     private UrlMgmt um;
     private string prefix;
+    private string faviconPath;
     public HTTPServer(string prefix)
     {
         this.listener = new HttpListener();
         this.um = new UrlMgmt();
         this.prefix = prefix;
+        this.faviconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "favicon.ico");
         this.listener.Prefixes.Add($"http://{this.prefix}/");
         this.listener.Start();
+        this.prefix = this.prefix.Replace("+", "0.0.0.0");
         Console.WriteLine($"Listening on http://{this.prefix}/");
 
 
@@ -221,7 +227,6 @@ public class HTTPServer
             HttpListenerContext context = listener.GetContext();
             HttpListenerRequest request = context.Request;
             HttpListenerResponse response = context.Response;
-
             string requestedUrl = request.RawUrl;
             Console.WriteLine($"Request for {requestedUrl}");
 
@@ -229,7 +234,7 @@ public class HTTPServer
             {
                 string originalUrl = extractVar(requestedUrl, "url");
                 string code = this.um.GetCode(originalUrl);
-                string shortenUrl = $"http://{this.prefix}/{code}";
+                string shortenUrl = $"http://{request.Url.Host}:{request.Url.Port}/{code}";
 
                 string responseString = $"<html><body><h1>your shorten url is: <br>{shortenUrl} </h1></body></html>";
                 byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
@@ -247,6 +252,13 @@ public class HTTPServer
                 response.ContentLength64 = buffer.Length;
                 response.OutputStream.Write(buffer, 0, buffer.Length);
                 response.Close();
+            }
+            else if (requestedUrl == "/favicon.ico")
+            {
+                byte[] buffer = File.ReadAllBytes(this.faviconPath);
+                response.ContentType = "image/x-icon";
+                response.ContentLength64 = buffer.Length;
+                response.OutputStream.Write(buffer, 0, buffer.Length);
             }
 
             else if (requestedUrl.Length == 7)
@@ -277,6 +289,16 @@ public class HTTPServer
                 response.ContentLength64 = buffer.Length;
                 response.OutputStream.Write(buffer, 0, buffer.Length);
                 response.Close();
+            }
+
+            else if (requestedUrl == "/")
+            {
+                string responseString = "<html><body><h1></h1></body></html>";
+                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+                response.ContentLength64 = buffer.Length;
+                response.OutputStream.Write(buffer, 0, buffer.Length);
+                response.Close();
+
             }
 
             else
